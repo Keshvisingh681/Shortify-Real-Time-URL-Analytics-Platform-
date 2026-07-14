@@ -1,0 +1,64 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String     @id @default(uuid()) @db.Uuid
+  email             String     @unique
+  passwordHash      String
+  isVerified        Boolean    @default(false)
+  isAdmin           Boolean    @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetExpires      DateTime?
+  avatarUrl         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  shortUrls         ShortUrl[]
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+model ShortUrl {
+  id          String       @id @default(uuid()) @db.Uuid
+  longUrl     String       @db.Text
+  shortCode   String       @unique
+  isEnabled   Boolean      @default(true)
+  expiresAt   DateTime?
+  userId      String       @db.Uuid
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  clickEvents ClickEvent[]
+
+  @@index([shortCode])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("short_urls")
+}
+
+model ClickEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  shortUrlId String   @db.Uuid
+  shortUrl   ShortUrl @relation(fields: [shortUrlId], references: [id], onDelete: Cascade)
+  timestamp  DateTime @default(now())
+  ip         String?
+  country    String?
+  city       String?
+  browser    String?
+  device     String?
+  os         String?
+  referrer   String?
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([shortUrlId])
+  @@index([createdAt])
+  @@map("click_events")
+}
